@@ -1,11 +1,15 @@
 menuconfig PLAT_KVM
        bool "KVM guest"
        default n
-       depends on ((ARCH_X86_64 && !HAVE_SMP) || (ARCH_ARM_64 && !HAVE_SYSCALL && !HAVE_PAGING))
-       select LIBUKDEBUG
-       select LIBUKALLOC
-       select LIBUKTIMECONV
-       select LIBNOLIBC if !HAVE_LIBC
+       depends on ((ARCH_X86_64 && !HAVE_SMP) || (ARCH_ARM_64 && !HAVE_SMP && !HAVE_SYSCALL && !HAVE_PAGING) || (ARCH_LOONGARCH_64 && !HAVE_PAGING))
+
+       select LIBUKDEBUG if !ARCH_LOONGARCH_64
+
+       # Not yet ported in LA
+       select LIBUKALLOC if !ARCH_LOONGARCH_64
+       select LIBUKTIMECONV if !ARCH_LOONGARCH_64
+       select LIBNOLIBC if !ARCH_LOONGARCH_64
+
        select LIBFDT if ARCH_ARM_64
        help
                 Create a Unikraft image that runs as a KVM guest

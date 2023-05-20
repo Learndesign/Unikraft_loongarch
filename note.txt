@@ -1,0 +1,142 @@
+一、Kraft命令:
+LANG=C kraft build 编码默认为ASCLL，避免UTF-8的报错。建议直接在bashrc中export LANG=C避免ascil编码报错
+kraft menuconfig 应用配置图形化菜单
+kraft configure --yes CONFIG_LIBUKDEBUG_ANSI_COLOR 利用命令的方式改变参数等同于在菜单栏中改变对应选项等同于图形菜单的功能
+
+
+   brctl:用于配置以太网网桥(需要root权限)
+1. sudo brctl addbr kraft0   : 创建一个新的网桥设备
+2. brctl show ：显示已经创建的网桥
+3. ifconfig kraft0 172.88.0.1  : 创建一个新的网络接口方便unikernel和host交流
+4. ifconfig kraft0 up  : up用于启动指定设备
+
+kraft run -b kraft0 "netdev.ipv4_addr=172.88.0.2 netdev.ipv4_gw_addr=172.88.0.1 netdev.ipv4_subnet_mask=255.255.255.0 --"
+其中--表示传递参数结束
+
+kraft init -t helloworld : 以helloword为模板初始化仓库，与kraft list pull helloworld不同，它不会建立新的helloworld文件夹，只是在当前目录下工作
+kraft configure : 选择需要生成image的平台
+
+二、Docker:
+sudo docker run -it --rm --name kraft   -e UK_WORKDIR=/usr/src/unikraft     -v $(pwd)/unikraft:/usr/src/unikraft     --entrypoint bash     unikraft/kraft:latest，请帮我解释上述命令的意义
+这个命令的作用是在 Docker 环境下启动 Unikraft 的 Kraft 工具，具体解释如下：
+
+sudo: 运行命令时需要管理员权限，所以使用 sudo。
+docker run: 运行 Docker 容器。
+-it: 以交互模式运行容器。
+--rm: 容器退出时自动删除容器文件系统。
+--name kraft: 为容器命名为 kraft。
+-e UK_WORKDIR=/usr/src/unikraft: 设置 Docker 环境变量 UK_WORKDIR 的值为 /usr/src/unikraft。
+-v $(pwd)/unikraft:/usr/src/unikraft: 将主机当前目录下的 unikraft 目录挂载到容器中的 /usr/src/unikraft 目录下，实现共享。
+--entrypoint bash: 指定容器的入口为 bash，即以 Bash 终端方式进入容器终端。
+unikraft/kraft:latest: 指定使用的 Unikraft 的版本和所在的仓库。
+综上所述，这个命令的作用是在 Docker 中运行一个 Unikraft 的 Kraft 工具，可以进行一些构建和编译等操作，同时挂载了本地的目录到容器中，方便传递和共享数据。
+
+
+三、QEMU:
+1.sudo qemu-system-x86_64 -kernel build/helloworld_kvm-x86_64 -nographic -serial /dev/tty
+
+2.要关闭正在运行的 QEMU 进程，请使用Ctrl+a x组合键。
+
+3.定义于boot_param.h，在龙芯平台上，固件通过三个寄存器将参数传递给内核。其中，这些参数包括内核命令行参数个数、内核命令行参数地址和 BootParamsInterface 数据结构地址。
+BootParamsInterface 数据结构由 SMBIOS 表、ACPI 表和扩展参数链表三部分组成。这些参数的地址均为 64 位虚拟地址。
+此外，内核命令行参数个数是一个 32 位有符号数据，内核命令行参数地址也是一个 64 位虚拟地址。
+
+四、git命令
+1.git remote show origin ：显示远程仓库信息 
+2.git status
+3.git checkout staging
+4.查看所有分支： git branch -a
+5.在本地新建一个分支： git branch branchName
+  git checkout -b iss53 //新创建分支并切换
+6.切换到你的新分支: git checkout branchName
+7.将新分支发布在github上： git push origin branchName
+8.在本地删除一个分支： git branch -d branchName
+8.在github远程端删除一个分支： git push origin :branchName (分支名前的冒号代表删除)
+9.git stash 命令将未提交的更改暂存 (stash) 起来，然后切换到其他分支进行工作。
+  这个命令会将当前分支上未提交的更改暂时保存起来，并将工作目录还原到最近一次提交时的状态。
+  然后，在新分支上进行所需的更改和提交。如果希望将之前暂存的更改重新应用到当前分支上，请使用以下命令：git stash apply
+  如果想要完全删除暂存的更改，请使用以下命令：git stash drop
+
+
+五、Linux命令
+make v=1 : Make会将每个执行的命令打印在屏幕上
+
+ps aux  显示所有进程
+
+vimdiff main.*  利用vim比较两个main.文件的不同
+
+loongarch64-unknown-linux-gnu-objdump -S kernel/kernel > kernel/kernel.asm
+loongarch64-unknown-linux-gnu-objdump -t kernel/kernel | sed '1,/SYMBOL TABLE/d; s/ .* / /; /^$/d' > kernel/kernel.sym
+
+readelf app-helloworld_kvm-loongarch64 -h 查看elf文件的头部信息
+
+六、GDB命令
+(gdb) hbreak main
+这个命令在 gdb 中设置一个硬件断点，当程序执行到 main 函数时停止程序运行，方便我们进行调试。
+
+hbreak 是 gdb 中设置硬件断点的命令，它与 break 命令不同，它可以设置更多种类的断点，包括硬件断点、条件断点、数据断点等。
+
+main 是程序入口函数的名称。这里我们使用 hbreak 命令设置一个在 main 函数入口处触发的硬件断点。 当程序执行到 main 函数时，程序会停下来，等待我们进行调试。
+
+(gdb)disass
+这个命令在 gdb 中显示当前正在调试的函数的反汇编代码，即以汇编代码的形式显示当前函数的机器指令，以帮助我们理解程序的执行过程。
+
+disass 是 gdb 中的一个命令，它用于反汇编当前正在调试的函数的机器指令。
+
+默认情况下，它显示当前函数的汇编代码，并将其显示在 gdb 命令行中。如果想在一个新窗口中显示反汇编代码，可以使用 layout asm 命令。
+
+(gdb)set disassembly-flavor intel
+这个命令在 gdb 中设置反汇编风格为 intel 格式，以便更好地查看和理解反汇编代码。
+
+set disassembly-flavor 是 gdb 中设置反汇编风格的命令。默认情况下， gdb 使用 AT&T 格式的汇编代码。但是，intel 格式的汇编代码在阅读和理解上更为直观，因此，我们可以使用这个命令将反汇编代码的风格设置为 intel 格式，方便我们更好地查看和理解反汇编代码。
+
+当我们在调试程序时，使用 intel 格式的汇编代码可以使代码更容易理解，特别是对于熟悉 x86 架构的人而言，这个命令可以提高阅读代码的效率。
+
+
+(gdb) x/s 0x3f1fea0
+x addr- 获取指定地址的值（类似于p *addr）
+
+这个命令在 gdb 中查看地址 0x3f1fea0 处的字符串。
+
+x/s 是 gdb 中的一个命令，用于查看内存地址中存储的字符串。其中，x 是一个查看内存的命令，/s 则是告诉 gdb 在指定地址处查看一个字符串。
+
+0x3f1fea0 是要查看的内存地址，它可以是任何有效的内存地址。在这个例子中，我们查看了 0x3f1fea0 地址处存储的字符串。如果该地址处存储的内容不是一个字符串，那么 gdb 会将其解释为字符序列，并显示出来
+
+(gdb) i r
+查看所有的寄存器的值
+
+(gdb) display /i $pc
+其中 $pc 代表当前汇编指令，/i 表示以十六进行显示，display 表示每次执行完指令后都显示一次
+
+(gdb) whatis arg
+打印数据类型arg
+
+(gdb) x/20i 0x300000
+用于在调试程序时显示内存地址0x300000处的前20条指令的汇编语言表示。
+
+disass可能会不管用，qemu可能是实地址，未包含在elf中，所以用这个命令将看不到任何效果。
+
+(gdb) add-symbol-file ../build/app-helloworld_kvm-loongarch64.dbg 0x300000
+
+重新 load一下符号表，这样就可以用disass和函数断点了
+
+(gdb) i r
+龙芯i r不显示具体的寄存器名字，只显示r0-r31，
+r4为a0，r5为a1
+
+七、汇编编写
+
+内联汇编
+#define mb() ({ __asm__ __volatile__("fence" : : : "memory"); })中的 : : : 的意义
+在GCC的内联汇编中，冒号（:）用于分隔不同的部分。每个冒号之间的内容如下：
+
+第一个冒号之前的部分称为输出部分（output operand），用于指定要将什么值写入哪个变量或内存地址中。
+第一个冒号和第二个冒号之间的部分称为输入部分（input operand），用于指定要从哪些变量或内存地址中读取值。
+第二个冒号和第三个冒号之间的部分称为修改部分（clobber list），用于指定哪些寄存器被改变了。
+第三个冒号之后的部分称为附加说明（asm options），用于指定其他的一些选项，如内存约束、寄存器约束等。
+在这个宏定义中，冒号之间的内容为 : : : "memory"。这里的三个冒号表示输入、输出和修改部分均为空。
+最后一个附加说明指定使用 "memory" 约束，表示该指令可能会修改内存，因此需要在指令之前添加一个内存屏障（fence指令）来确保内存的同步和一致性。
+
+
+LOONGARCH
+loongarch
